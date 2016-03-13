@@ -1,0 +1,107 @@
+;; The first three lines of this file were inserted by DrRacket. They record metadata
+;; about the language level of this file in a form that our tools can easily process.
+#reader(lib "htdp-advanced-reader.ss" "lang")((modname sarasnakeproject) (read-case-sensitive #t) (teachpacks ((lib "image.ss" "teachpack" "2htdp"))) (htdp-settings #(#t constructor repeating-decimal #t #t none #f ((lib "image.ss" "teachpack" "2htdp")))))
+;SnakeProject
+
+(require "AutoSake.rkt")
+
+  ; a game is
+  ; (make-game snake food nat)
+  ; (define-struct game (snake food ticks))
+  
+  ; a heading is either
+  ; - 'up
+  ; - 'down
+  ; - 'left
+  ; - 'right
+  
+  ; a snake is
+  ; (make-snake heading body)
+  ; (define-struct snake (heading segments))
+  
+  ; a body is either
+  ; - (cons posn empty)
+  ; - (cons posn body)
+; x-coordinates increase from 1 to 50 (inclusive) toward the right
+  ; y-coordinates increase from 1 to 50 (inclusive) toward the top
+  
+  ; a food is either
+  ; - empty
+  ; - (cons posn food)
+
+;add-food : game posn -> game
+
+(define (add-food game posn)
+  (make-food
+   (* cell-length (add1 (random (sub1 (quotient board-length cell-length)))))
+   (* cell-length (add1 (random (sub1 (quotient board-length cell-length)))))))
+
+; change the direction of the snake.
+; snake-change-direction (snake direction -> snake))
+(define (snake-change-heading snake heading)
+  (make-snake heading (snake-cell-length snake)))
+
+(define (heading? x)
+  (cond [(equal? x (ann "up" "up")) true]
+        [(equal? x (ann "down" "down")) true]
+        [(equal? x (ann "left" "left")) true]
+        [(equal? x (ann "right" "right")) true]
+        [else false]))
+
+; gives the score by multiplying the length by 25 and subtracting the ticks 
+; appends the score display
+; game-score : game -> nat
+(define (game-score ticks snake-body)
+  (- (*(length 25) ticks)))
+string-append "Score:" 'game-score
+
+; game-over? : game -> boolean
+; snake bumping into self 
+; self-colliding? (Snake -> Boolean))
+(define (self-colliding? snake)
+  (ormap (lambda: ([s : segments]) (posn=? (next-head snake) s)) 
+         (rest (snake-segments snake))))
+
+; snake hitting walls
+; wall-colliding? (snake -> boolean))
+(define (wall-colliding? snake)
+  (let ((x (posn-x (snake-heading snake)))
+        (y (posn-y (snake-heading snake))))
+    (or (= 0 x) (= x board-length)
+        (= 0 y) (= y board-length))))
+
+;advance-game :game -> game
+
+; head position of the snake
+; snake-head (snake -> body))
+(define (snake-heading snake)
+  (first (snake-segments snake)))
+
+; calculates the next head position of snake
+;next-head (snake -> segments))
+(define (next-heading snake)
+  (move-seg (first (snake-segments snake)) 
+            (snake-heading snake)))
+
+; moves the snake in the direction indicated
+;move-seg (Seg Direction -> Segments))
+(define (move-segments segments heading)
+  (cond [(string=? heading (s "up"))    (posn-move segment 0 (- SEG-SIZE))]
+        [(string=? heading (s "down"))  (posn-move segment 0 SEG-SIZE)]
+        [(string=? heading (s "left"))  (posn-move segment (- SEG-SIZE) 0)]
+        [(string=? heading (s "right")) (posn-move segment SEG-SIZE 0)]))
+
+; tells if snake is eating food
+; eating? (Snake Food -> Boolean))
+(define (eating? snake food)
+  (posn=? (snake-heading snake) 
+          (make-posn (food-x food) (food-y food))))
+
+
+;CALL TO PLAY THE GAME
+(play-game game-start
+             advance-game
+             add-food
+             change-heading
+             game-score
+             game-over?)
